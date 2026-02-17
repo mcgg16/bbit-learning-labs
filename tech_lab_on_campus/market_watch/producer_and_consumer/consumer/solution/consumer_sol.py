@@ -1,5 +1,5 @@
 # Attempting consumer
-import pika
+from consumer_interface import mqConsumerInterface # Links to the c_i file to use the class
 
 # Inherit from file at consumer_interface
 class mqConsumer(mqConsumerInterface): 

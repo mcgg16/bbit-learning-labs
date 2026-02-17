@@ -20,65 +20,75 @@ class mqConsumerInterface:
         self, binding_key: str, exchange_name: str, queue_name: str
     ) -> None:
         # Save parameters to class variables
-        #self.binding_key = binding_key
-        #self.exchange_name = exchange_name
-        #self.queue_name = queue_name
+        self.binding_key = binding_key
+        self.exchange_name = exchange_name
+        self.queue_name = queue_name
+        self.channel = None # A ver si empty channel
 
         # Call setupRMQConnection
-        pass
-
-    # Moving to try to get it to work w Pika
-    def setupRMQConnection(self) -> None:
-        # Set-up Connection to RabbitMQ service
-        ##connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-        con_params = pika.URLParameters(os.environ["AMQP_URL"]) # Using the ones provided by the Functions.md
-        connection = pika.BlockingConnection(parameters=con_params)
-
-
-        # Establish Channel
-        channel = connection.channel()
-        
-
-        # Create Queue if not already present
-        channel.queue_declare(queue="Tech Lab Queue") # Segun se supone q ya automaticamente lo hace así
-
-        # Create the exchange if not already present
-        exchange = channel.exchange_declare(exchange="Exchange Name")
-
-        # Bind Binding Key to Queue on the exchange
-        ## TODO change the routing key and exchange name
-        channel.queue_bind(
-            queue= "Tech Lab Queue",
-            routing_key= "Routing Key",
-            exchange="Exchange Name",
-        )
-
-        # Set-up Callback function for receiving messages
-        # Using the on_message_callback funct below
-        channel.basic_consume(
-            "Tech Lab Queue", on_message_callback, auto_ack=False
-        )
-    
-        ## TODO check if I'm supposed to get rid of pass
-        ## pass
+        self.setupRMQConnection()
 
     def on_message_callback(
         self, channel, method_frame, header_frame, body
     ) -> None:
         # Acknowledge message
-        channel.basic_ack(method_frame.delivery_tag, False)
+        self.channel.basic_ack(method_frame.delivery_tag, False)
+        #channel.basic_ack(method_frame.delivery_tag, False)
 
         #Print message (The message is contained in the body parameter variable)
         print(f"Consumer received: {body}")
 
         ##pass ## TODO Check if pass also dies
 
+    # Moving to try to get it to work w Pika
+    def setupRMQConnection(self) -> None:
+        # Set-up Connection to RabbitMQ service
+        #con_params = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        con_params = pika.URLParameters(os.environ["AMQP_URL"]) # Using the ones provided by the Functions.md
+        self.connection = pika.BlockingConnection(parameters=con_params)
+
+        # Establish Channel
+        self.channel = self.connection.channel() # Mas yap de self pq no calaba sin eso
+        #channel = self.connection.channel() # Mas yap de self pq no calaba sin eso
+
+        # Create Queue if not already present
+        self.channel.queue_declare(queue= self.queue_name) # Segun se supone q ya automaticamente lo hace así
+        #channel.queue_declare(queue= self.queue_name) # Segun se supone q ya automaticamente lo hace así
+
+        # Create the exchange if not already present
+        self.exchange = self.channel.exchange_declare(exchange=self.exchange_name)
+        #exchange = channel.exchange_declare(exchange=self.exchange_name)
+
+        # Bind Binding Key to Queue on the exchange
+        ## TODO change the routing key and exchange name
+        self.channel.queue_bind(
+            queue= self.queue_name,
+            routing_key= self.binding_key,
+            exchange= self.exchange_name,
+        )
+
+        # Set-up Callback function for receiving messages
+        # Using the on_message_callback funct below
+        self.channel.basic_consume(
+            self.queue_name, self.on_message_callback, auto_ack=False
+        )
+
+        '''channel.basic_consume(
+            self.queue_name, on_message_callback, auto_ack=False
+        )'''
+    
+        ## TODO check if I'm supposed to get rid of pass
+        ## pass
+
+   
+
     def startConsuming(self) -> None:
         # Print " [*] Waiting for messages. To exit press CTRL+C"
         " [*] Waiting for messages. To exit press CTRL+C"
 
         # Start consuming messages
-        channel.start_consuming()
+        self.channel.start_consuming()
+        #channel.start_consuming()
 
         ## pass
     
@@ -87,9 +97,11 @@ class mqConsumerInterface:
         print("Closing RMQ connection on destruction")
         
         # Close Channel
-        channel.close()
+        self.channel.close()
+        #channel.close()
 
         # Close Connection
-        connection.close()
+        self.connection.close()
+        #connection.close()
         
         ##pass
