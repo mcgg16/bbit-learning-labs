@@ -79,14 +79,17 @@ class mqConsumerInterface:
 
         # Start consuming messages
         channel.start_consuming()
-        
+
         ## pass
     
     def __del__(self) -> None:
         # Print "Closing RMQ connection on destruction"
+        print("Closing RMQ connection on destruction")
         
         # Close Channel
+        channel.close()
 
         # Close Connection
+        connection.close()
         
-        pass
+        ##pass
